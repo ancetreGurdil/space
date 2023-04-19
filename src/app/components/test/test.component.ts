@@ -39,7 +39,8 @@ export class TestComponent implements OnInit, AfterViewInit {
     this.addGeometry();
     //
     this.render();
-  }
+/*     this.addAudio();
+ */  }
 
   addRenderer() {
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -51,11 +52,25 @@ export class TestComponent implements OnInit, AfterViewInit {
 
   addControls(){
     this.controls.enabled = true;
-    this.controls.enableZoom = false;
+    this.controls.enableZoom = true;
     this.camera.position.z = -0.01;
     this.camera.position.y = 25 ;
+  }
+  addAudio(){
+    const listener = new THREE.AudioListener();
+    this.camera.add( listener );
 
+    // create a global audio source
+    const sound = new THREE.Audio( listener );
 
+    // load a sound and set it as the Audio object's buffer
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load( 'assets/Outer-Wilds.ogg', function( buffer ) {
+      sound.setBuffer( buffer );
+      sound.setLoop( true );
+      sound.setVolume( 0.5 );
+      sound.play();
+    });
   }
 
   addGeometry(){
@@ -121,6 +136,23 @@ export class TestComponent implements OnInit, AfterViewInit {
     meshSpheresPtOursArray[5].position.set(14,-150,153);
     meshSpheresPtOursArray[6].position.set(-15,-150,120);
 
+    //
+    let tracer = new  THREE.LineBasicMaterial()
+
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(meshSpheresPtOursArray[0].position.x, meshSpheresPtOursArray[0].position.y, meshSpheresPtOursArray[0].position.z), // Premier point
+      new THREE.Vector3(meshSpheresPtOursArray[1].position.x, meshSpheresPtOursArray[1].position.y, meshSpheresPtOursArray[1].position.z), // Premier point
+      new THREE.Vector3(meshSpheresPtOursArray[2].position.x, meshSpheresPtOursArray[2].position.y, meshSpheresPtOursArray[2].position.z), // Premier point
+      new THREE.Vector3(meshSpheresPtOursArray[3].position.x, meshSpheresPtOursArray[3].position.y, meshSpheresPtOursArray[3].position.z),
+      new THREE.Vector3(meshSpheresPtOursArray[4].position.x, meshSpheresPtOursArray[4].position.y, meshSpheresPtOursArray[4].position.z), // Premier point
+      new THREE.Vector3(meshSpheresPtOursArray[6].position.x, meshSpheresPtOursArray[6].position.y, meshSpheresPtOursArray[6].position.z), // Premier point
+      new THREE.Vector3(meshSpheresPtOursArray[5].position.x, meshSpheresPtOursArray[5].position.y, meshSpheresPtOursArray[5].position.z),
+      new THREE.Vector3(meshSpheresPtOursArray[3].position.x, meshSpheresPtOursArray[3].position.y, meshSpheresPtOursArray[3].position.z),
+      // Deuxième point
+    ]);
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+    this.scene.add(line);
   }
 
   render() {
