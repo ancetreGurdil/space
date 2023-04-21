@@ -2,6 +2,7 @@ import { AfterViewInit, Component, OnInit } from '@angular/core';
 import * as THREE from 'three'
 import { fromEvent, Observable, Subscription } from 'rxjs';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { log } from 'console';
 
 @Component({
   selector: 'app-test',
@@ -16,12 +17,18 @@ export class TestComponent implements OnInit, AfterViewInit {
   public scene: THREE.Scene;
   public resizeObservable: Observable<Event> = new Observable;
   public resizeSubscription: Subscription = new Subscription;
+  raycaster = new THREE.Raycaster();
+  public pointer : THREE.Vector2;
+  meshBoxPtOurse!: THREE.MeshBasicMaterial;
+  ptOursMesh!: THREE.Mesh;
+  lineMaterial!: THREE.LineBasicMaterial;
 
   constructor(){
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 500 );
     this.renderer = new THREE.WebGLRenderer();
     this.controls = new OrbitControls( this.camera, this.renderer.domElement);
+    this.pointer = new THREE.Vector2(0,0);
   }
 
   ngOnInit(): void {
@@ -36,11 +43,19 @@ export class TestComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     this.addRenderer()
     this.addControls();
+    this.addPtOurse();
     this.addGeometry();
-    //
     this.render();
-/*     this.addAudio();
- */  }
+    this.addAudio();
+    window.addEventListener('mousemove', ((event)=> {
+      // Mettre à jour les coordonnées de la souris
+      console.log('c\'est moi');
+      this.pointer = new THREE.Vector2(0,0);
+      this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    }));
+   }
 
   addRenderer() {
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -68,7 +83,7 @@ export class TestComponent implements OnInit, AfterViewInit {
     audioLoader.load( 'assets/Outer-Wilds.ogg', function( buffer ) {
       sound.setBuffer( buffer );
       sound.setLoop( true );
-      sound.setVolume( 0.5 );
+      sound.setVolume( 1);
       sound.play();
     });
   }
@@ -92,35 +107,10 @@ export class TestComponent implements OnInit, AfterViewInit {
     const material = new THREE.PointsMaterial({ size: 1, color: 0xffffff });
     const mesh = new THREE.Points(bufferGeometry, material);
     this.scene.add(mesh);
+  }
 
 
-    /* const geometry = new THREE.BoxGeometry(400,400,400); */
-
-    /* geometry.scale(0.5, 0.5, -0.5) */
-
-   /*  const materials = [];
-
-    let texture_ft = new THREE.TextureLoader().load('assets/front.png')
-    let texture_bk = new THREE.TextureLoader().load('assets/back.png')
-    let texture_up = new THREE.TextureLoader().load('assets/up.png')
-    let texture_dn = new THREE.TextureLoader().load('assets/down.png')
-    let texture_rt = new THREE.TextureLoader().load('assets/right.png')
-    let texture_lt = new THREE.TextureLoader().load('assets/left.png')
-
-    materials.push(new THREE.MeshBasicMaterial({map: texture_ft}));
-    materials.push(new THREE.MeshBasicMaterial({map: texture_bk}));
-    materials.push(new THREE.MeshBasicMaterial({map: texture_up}));
-    materials.push(new THREE.MeshBasicMaterial({map: texture_dn}));
-    materials.push(new THREE.MeshBasicMaterial({map: texture_rt}));
-    materials.push(new THREE.MeshBasicMaterial({map: texture_lt})); */
-
-
-
-    /* const skyBox = new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:'grey'}));
-    skyBox.layers.set(1);
-    this.scene.add(skyBox); */
-
-
+  addPtOurse(){
     let meshSpheresPtOursArray = [];
     for(let i = 0;i<7;i++){
       let meshSphere : THREE.Mesh = new THREE.Mesh(new THREE.SphereGeometry(1,32,16), new THREE.MeshBasicMaterial({color: 'rgb(0,255,0)'}));
@@ -136,11 +126,10 @@ export class TestComponent implements OnInit, AfterViewInit {
     meshSpheresPtOursArray[5].position.set(14,-150,153);
     meshSpheresPtOursArray[6].position.set(-15,-150,120);
 
-    //
-    let tracer = new  THREE.LineBasicMaterial()
 
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+    this.lineMaterial = new THREE.LineBasicMaterial({ transparent:true,opacity:0 });
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+      // tracé de tous les points
       new THREE.Vector3(meshSpheresPtOursArray[0].position.x, meshSpheresPtOursArray[0].position.y, meshSpheresPtOursArray[0].position.z), // Premier point
       new THREE.Vector3(meshSpheresPtOursArray[1].position.x, meshSpheresPtOursArray[1].position.y, meshSpheresPtOursArray[1].position.z), // Premier point
       new THREE.Vector3(meshSpheresPtOursArray[2].position.x, meshSpheresPtOursArray[2].position.y, meshSpheresPtOursArray[2].position.z), // Premier point
@@ -149,13 +138,35 @@ export class TestComponent implements OnInit, AfterViewInit {
       new THREE.Vector3(meshSpheresPtOursArray[6].position.x, meshSpheresPtOursArray[6].position.y, meshSpheresPtOursArray[6].position.z), // Premier point
       new THREE.Vector3(meshSpheresPtOursArray[5].position.x, meshSpheresPtOursArray[5].position.y, meshSpheresPtOursArray[5].position.z),
       new THREE.Vector3(meshSpheresPtOursArray[3].position.x, meshSpheresPtOursArray[3].position.y, meshSpheresPtOursArray[3].position.z),
-      // Deuxième point
     ]);
-    const line = new THREE.Line(lineGeometry, lineMaterial);
+    const line = new THREE.Line(lineGeometry, this.lineMaterial);
     this.scene.add(line);
+    const boxPtOurse = new THREE.BoxGeometry(50,10,190)
+    this.meshBoxPtOurse = new THREE.MeshBasicMaterial({opacity:0,transparent:true});
+    this.ptOursMesh = new THREE.Mesh(boxPtOurse, this.meshBoxPtOurse);
+    this.ptOursMesh.position.set(-6,-149,210);
+    this.scene.add(this.ptOursMesh);
   }
 
   render() {
+    // Utiliser le détecteur pour récupérer les objets cliqués
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    // Parcourir les objets cliqués
+    if(intersects.length == 0) {
+      this.lineMaterial.opacity = 0;
+      this.lineMaterial.transparent = true;
+    }else {
+      for (let i = 0; i < intersects.length; i++) {
+        const obj = intersects[i].object;
+        // Si l'objet est la GeometryBox que vous souhaitez modifier
+        if (obj === this.ptOursMesh) {
+          // Modifiez la couleur de l'objet
+          this.lineMaterial.opacity = 1;
+          this.lineMaterial.transparent = false;
+        }
+      }
+    }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
     this.renderer.setAnimationLoop(this.render.bind(this));
